@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulario de Asistencia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-image: url('./WEB-FONDO.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* --- Versión WEB (centrado vertical) --- */
+        .container {
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;   /* CENTRADO VERTICAL */
+            align-items: flex-end;     /* Alineado a la derecha */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        form {
+            background-color: rgba(255, 255, 255);
+            padding: 80px 40px;
+            border-radius: 35px;
+            max-width: 450px;
+            width: 100%;
+            margin-right: 130px;
+            box-shadow: 0 4px 10px rgba(117, 114, 114, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 1.8rem;
+            text-align: center;
+            margin: 0;
+        }
+        h2 {
+            margin: 0;
+            margin-bottom: 1rem;
+        }
+
+        .contenedor-titulos {
+            text-align: center;
+        }
+
+        label {
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        input, select {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            border-color: #007BFF;
+            outline: none;
+        }
+
+        button {
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .thank-you {
+            background-color: rgba(255, 255, 255);
+            padding: 250px 40px;
+            border-radius: 35px;
+            max-width: 450px;
+            width: 100%;
+            margin-right: 130px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 150px;
+        }
+
+        /* --- MOBILE (vuelve abajo) --- */
+        @media screen and (max-width: 768px) {
+            body, html {
+                background-image: url('./APP-FONDO.JPEG');
+            }
+
+            .container {
+                align-items: center;
+                justify-content: flex-end; /* FORMULARIO ABAJO */
+                padding: 20px;
+            }
+
+            form, .thank-you {
+                margin-right: 0;
+                margin-left: 0;
+                width: 100%;
+                max-width: 90%;
+                margin-bottom: 0;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            form {
+                padding: 20px;
+                max-width: 95%;
+            }
+
+            .thank-you {
+                padding: 180px 20px;
+                max-width: 95%;
+            }
+        }
+    </style>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <form id="asistenciaForm">
+            <div class="contenedor-titulos">
+               <h1>Confirmación</h1>
+               <h2>Fiesta de fin de año 2024</h2>
+            </div>
+
+            <label for="asistire">Asistiré:</label>
+            <select id="asistire" name="asistire" required>
+                <option value="" disabled selected>Seleccione una opción</option>
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+            </select>
+
+            <label for="dni">DNI:</label>
+            <input type="text" id="dni" name="dni" required>
+
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" required>
+
+            <label for="apellido">Apellido:</label>
+            <input type="text" id="apellido" name="apellido" required>
+
+            <button type="submit" id="submitBtn">Enviar</button>
+        </form>
+
+        <div id="thankYouMessage" class="thank-you" style="display:none;">
+            ¡Gracias! <br> Recibimos tu respuesta.
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnIReT31u-ACaOp4orpodz6fyjzToUhuc",
+            authDomain: "formulario-pedraza.firebaseapp.com",
+            projectId: "formulario-pedraza",
+            storageBucket: "formulario-pedraza.appspot.com",
+            messagingSenderId: "220367986642",
+            appId: "1:220367986642:web:50d74eef0ebdb21daa320b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        const form = document.getElementById('asistenciaForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const thankYouMessage = document.getElementById('thankYouMessage');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+
+            const asistire = form['asistire'].value;
+            const dni = form['dni'].value.trim();
+            const nombre = form['nombre'].value.trim();
+            const apellido = form['apellido'].value.trim();
+
+            try {
+                await db.collection('neumasur').add({
+                    asistire: asistire,
+                    dni: dni,
+                    nombre: nombre,
+                    apellido: apellido,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                form.style.display = 'none';
+                thankYouMessage.style.display = 'block';
+            } catch (error) {
+                console.error('Error al enviar los datos:', error);
+                alert('Hubo un error al enviar los datos. Intente nuevamente.');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
